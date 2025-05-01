@@ -1,0 +1,138 @@
+---
+description: This rules file defines how to integrate sorting in table component
+globs: 
+alwaysApply: false
+---
+# Table Sorting Implementation Guidelines
+
+## Core Concepts
+
+### State Management
+- Use `useMemo` for table data state
+- Avoid `useState` + `useEffect` combinations
+- Implement proper sorting state management
+
+## Implementation
+
+### 1. Column Configuration
+```typescript
+const columns = [
+  {
+    id: 'name',
+    header: 'Name',
+    meta: { isSortable: true }  // Enable sorting
+  },
+  {
+    id: 'actions',
+    header: 'Actions'
+    // No sorting for action columns
+  }
+];
+```
+
+### 2. Table Configuration
+```typescript
+const table = useReactTable({
+  data: tableData,
+  columns,
+  state: { sorting },
+  onSortingChange: setSorting,
+  manualSorting: true,  // For server-side sorting
+});
+```
+
+### 3. Sorting State
+```typescript
+// Initialize with default sorting
+const [sorting, setSorting] = useState<SortingState>([
+  { id: 'defaultColumn', desc: true }
+]);
+```
+
+### 4. API Integration
+```typescript
+const query = useQuery({
+  queryKey: ['table-data', sorting],
+  queryFn: () => fetchData({
+    sortBy: sorting[0]?.id,
+    sortOrder: sorting[0]?.desc ? 'desc' : 'asc',
+  }),
+});
+```
+
+## Best Practices
+
+### 1. Column Definition
+- Add `meta: { isSortable: true }` only to sortable columns
+- Exclude sorting from action columns
+- Use clear column identifiers
+
+### 2. State Management
+- Initialize sorting with sensible defaults
+- Handle sorting state changes efficiently
+- Maintain clean state updates
+
+### 3. Server Integration
+- Pass sorting parameters consistently
+- Handle server-side sorting properly
+- Update query parameters appropriately
+
+### 4. Performance
+- Use `useMemo` for derived data
+- Implement proper memoization
+- Avoid unnecessary re-renders
+
+## Example Implementation
+
+```typescript
+import { useState, useMemo } from 'react';
+import { useReactTable, SortingState } from '@tanstack/react-table';
+
+const TableComponent = () => {
+  // Sorting state
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: 'name', desc: false }
+  ]);
+
+  // Table data query
+  const query = useQuery({
+    queryKey: ['table-data', sorting],
+    queryFn: () => fetchData({
+      sortBy: sorting[0]?.id,
+      sortOrder: sorting[0]?.desc ? 'desc' : 'asc',
+    }),
+  });
+
+  // Table configuration
+  const table = useReactTable({
+    data: query.data ?? [],
+    columns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    manualSorting: true,
+  });
+
+  return (
+    <Table>
+      {/* Table implementation */}
+    </Table>
+  );
+};
+```
+
+## Things to Avoid
+
+1. State Management:
+   - Don't mix controlled and uncontrolled sorting
+   - Avoid unnecessary state updates
+   - Don't implement client-side sorting for server-sorted data
+
+2. Performance:
+   - Don't recalculate sorted data unnecessarily
+   - Avoid expensive operations in sort functions
+   - Don't trigger unnecessary API calls
+
+3. Implementation:
+   - Don't sort action columns
+   - Avoid complex sorting logic in components
+   - Don't mix client and server sorting
